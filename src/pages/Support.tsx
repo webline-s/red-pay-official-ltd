@@ -10,15 +10,15 @@ import { MessageCircle, Send, Mail, MessagesSquare } from "lucide-react";
 const Support = () => {
   const [liveChatOpen, setLiveChatOpen] = useState(false);
   const handleTelegramSupport = () => {
-    window.open("https://t.me/Redpaysupport", "_blank");
+    window.open("https://t.me/Bluepaywebline", "_blank");
   };
 
   const handleWhatsAppSupport = () => {
-    window.open("https://wa.me/2349029987533", "_blank");
+    window.open("https://wa.me/2349011417160", "_blank");
   };
 
   const handleEmailSupport = () => {
-    window.location.href = "mailto:redpaycustomerservice@gmail.com";
+    window.location.href = "mailto:financial1240@gmail.com";
   };
 
   const handleLiveChat = () => {
