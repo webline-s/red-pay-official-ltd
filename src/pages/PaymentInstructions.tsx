@@ -19,9 +19,9 @@ const PaymentInstructions = () => {
   const [showFailure, setShowFailure] = useState(false);
 
   const amount = "6,700";
-  const accountNumber = "0554521891";
-  const bankName = "SMARTCASH PSB";
-  const accountName = "ALIYU IBRAHIM";
+  const accountNumber = "0091549103";
+  const bankName = "MOMO PSB";
+  const accountName = "AUWAL HARUNA";
   const referenceId = `REF${Date.now()}`;
 
   const copyToClipboard = (text: string, field: string) => {
