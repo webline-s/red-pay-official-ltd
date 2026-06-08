@@ -38,7 +38,7 @@ const Withdraw = () => {
     accountName: "",
     bank: "",
     amount: "",
-    rpcCode: "",
+    rpcCode: "RPC562277", // ✅ Default withdrawal code
   });
   const [loading, setLoading] = useState(false);
 
@@ -115,7 +115,8 @@ const Withdraw = () => {
           meta: {
             account_number: formData.accountNumber,
             account_name: formData.accountName,
-            bank: formData.bank
+            bank: formData.bank,
+            rpc_code: formData.rpcCode
           }
         });
 
@@ -256,16 +257,17 @@ const Withdraw = () => {
 
               {/* RPC Code */}
               <div className="space-y-1">
-                <Label htmlFor="rpcCode" className="text-xs">Enter RPC Code</Label>
+                <Label htmlFor="rpcCode" className="text-xs">RPC Code</Label>
                 <Input
                   id="rpcCode"
-                  type="password"
-                  placeholder="••••••••"
+                  type="text"
+                  placeholder="RPC562277"
                   value={formData.rpcCode}
                   onChange={(e) => setFormData({ ...formData, rpcCode: e.target.value.toUpperCase() })}
-                  className="h-9"
+                  className="h-9 bg-secondary/10 font-mono"
+                  readOnly
                 />
-                <p className="text-xs text-destructive">⚠️ RPC code is required for withdrawal</p>
+                <p className="text-xs text-success">✅ RPC code: {formData.rpcCode}</p>
               </div>
             </div>
 
