@@ -107,20 +107,24 @@ const Dashboard = () => {
     
     try {
       const newBalance = (profile.balance || 0) + 30000;
+      const currentDate = new Date().toISOString();
       
       // Update user balance and last claim time
       const { error: updateError } = await supabase
         .from('users')
         .update({ 
           balance: newBalance,
-          last_claim_at: new Date().toISOString()
+          last_claim_at: currentDate
         })
         .eq('user_id', profile.user_id);
 
-      if (updateError) throw updateError;
+      if (updateError) {
+        console.error('Balance update error:', updateError);
+        throw new Error('Failed to update balance: ' + updateError.message);
+      }
 
-      // Create transaction record
-      await supabase.from('transactions').insert({
+      // Create transaction record with DATE field
+      const { error: transactionError } = await supabase.from('transactions').insert({
         user_id: profile.user_id,
         title: 'Daily Claim Bonus',
         amount: 30000,
@@ -128,8 +132,20 @@ const Dashboard = () => {
         transaction_id: `CLAIM-${Date.now()}`,
         balance_before: profile.balance || 0,
         balance_after: newBalance,
+        date: currentDate, // ✅ FIX: Added missing date field
         meta: {}
       });
+
+      if (transactionError) {
+        console.error('Transaction creation error:', transactionError);
+        // Rollback balance update if transaction fails
+        await supabase
+          .from('users')
+          .update({ balance: profile.balance, last_claim_at: profile.last_claim_at })
+          .eq('user_id', profile.user_id);
+        
+        throw new Error('Failed to create transaction: ' + transactionError.message);
+      }
 
       // Set next claim time (15 minutes from now)
       const next = new Date(Date.now() + 15 * 60 * 1000);
