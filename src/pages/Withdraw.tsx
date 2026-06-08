@@ -63,14 +63,14 @@ const Withdraw = () => {
     }
 
     // Validate RPC code against database
-    const { data: rpcPurchase } = await supabase
+    const { data: rpcPurchase, error: rpcError } = await supabase
       .from('rpc_purchases')
       .select('rpc_code_issued, verified')
       .eq('user_id', profile.user_id)
       .eq('verified', true)
       .single();
 
-    if (!rpcPurchase || rpcPurchase.rpc_code_issued !== formData.rpcCode) {
+    if (rpcError || !rpcPurchase || rpcPurchase.rpc_code_issued !== formData.rpcCode) {
       toast.error("Invalid or unverified RPC Code. Please purchase RPC first.");
       return;
     }
@@ -86,6 +86,8 @@ const Withdraw = () => {
     setLoading(true);
     try {
       const newBalance = (profile.balance || 0) - withdrawAmount;
+      const currentDate = new Date().toISOString();
+      const transactionId = `WD-${Date.now()}`;
       
       // Update user balance
       const { error: updateError } = await supabase
@@ -93,19 +95,23 @@ const Withdraw = () => {
         .update({ balance: newBalance })
         .eq('user_id', profile.user_id);
 
-      if (updateError) throw updateError;
+      if (updateError) {
+        console.error('Balance update error:', updateError);
+        throw new Error('Failed to update balance: ' + updateError.message);
+      }
 
-      // Create transaction record
-      const { error: transactionError } = await supabase
+      // Create transaction record with DATE field
+      const { error: transactionError, data: transactionData } = await supabase
         .from('transactions')
         .insert({
           user_id: profile.user_id,
           title: 'Withdrawal',
           amount: -withdrawAmount,
           type: 'debit',
-          transaction_id: `WD-${Date.now()}`,
+          transaction_id: transactionId,
           balance_before: profile.balance || 0,
           balance_after: newBalance,
+          date: currentDate, // ✅ FIX: Added missing date field
           meta: {
             account_number: formData.accountNumber,
             account_name: formData.accountName,
@@ -113,7 +119,16 @@ const Withdraw = () => {
           }
         });
 
-      if (transactionError) throw transactionError;
+      if (transactionError) {
+        console.error('Transaction creation error:', transactionError);
+        // Rollback balance update if transaction fails
+        await supabase
+          .from('users')
+          .update({ balance: profile.balance })
+          .eq('user_id', profile.user_id);
+        
+        throw new Error('Failed to create transaction: ' + transactionError.message);
+      }
 
       await refreshProfile();
       toast.success("Withdrawal processed successfully!");
