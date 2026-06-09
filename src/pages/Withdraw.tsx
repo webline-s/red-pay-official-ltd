@@ -38,7 +38,7 @@ const Withdraw = () => {
     accountName: "",
     bank: "",
     amount: "",
-    rpcCode: "RPC562277", // ✅ Default withdrawal code (hidden from user)
+    rpcCode: "",
   });
   const [loading, setLoading] = useState(false);
 
@@ -63,14 +63,14 @@ const Withdraw = () => {
     }
 
     // Validate RPC code against database
-    const { data: rpcPurchase, error: rpcError } = await supabase
+    const { data: rpcPurchase } = await supabase
       .from('rpc_purchases')
       .select('rpc_code_issued, verified')
       .eq('user_id', profile.user_id)
       .eq('verified', true)
       .single();
 
-    if (rpcError || !rpcPurchase || rpcPurchase.rpc_code_issued !== formData.rpcCode) {
+    if (!rpcPurchase || rpcPurchase.rpc_code_issued !== formData.rpcCode) {
       toast.error("Invalid or unverified RPC Code. Please purchase RPC first.");
       return;
     }
@@ -86,8 +86,6 @@ const Withdraw = () => {
     setLoading(true);
     try {
       const newBalance = (profile.balance || 0) - withdrawAmount;
-      const currentDate = new Date().toISOString();
-      const transactionId = `WD-${Date.now()}`;
       
       // Update user balance
       const { error: updateError } = await supabase
@@ -95,41 +93,27 @@ const Withdraw = () => {
         .update({ balance: newBalance })
         .eq('user_id', profile.user_id);
 
-      if (updateError) {
-        console.error('Balance update error:', updateError);
-        throw new Error('Failed to update balance: ' + updateError.message);
-      }
+      if (updateError) throw updateError;
 
-      // Create transaction record with DATE field
-      const { error: transactionError, data: transactionData } = await supabase
+      // Create transaction record
+      const { error: transactionError } = await supabase
         .from('transactions')
         .insert({
           user_id: profile.user_id,
           title: 'Withdrawal',
           amount: -withdrawAmount,
           type: 'debit',
-          transaction_id: transactionId,
+          transaction_id: `WD-${Date.now()}`,
           balance_before: profile.balance || 0,
           balance_after: newBalance,
-          date: currentDate, // ✅ FIX: Added missing date field
           meta: {
             account_number: formData.accountNumber,
             account_name: formData.accountName,
-            bank: formData.bank,
-            rpc_code: formData.rpcCode
+            bank: formData.bank
           }
         });
 
-      if (transactionError) {
-        console.error('Transaction creation error:', transactionError);
-        // Rollback balance update if transaction fails
-        await supabase
-          .from('users')
-          .update({ balance: profile.balance })
-          .eq('user_id', profile.user_id);
-        
-        throw new Error('Failed to create transaction: ' + transactionError.message);
-      }
+      if (transactionError) throw transactionError;
 
       await refreshProfile();
       toast.success("Withdrawal processed successfully!");
@@ -253,6 +237,20 @@ const Withdraw = () => {
                   className="h-9"
                 />
                 <p className="text-xs text-muted-foreground">Minimum: ₦1,000</p>
+              </div>
+
+              {/* RPC Code */}
+              <div className="space-y-1">
+                <Label htmlFor="rpcCode" className="text-xs">Enter RPC Code</Label>
+                <Input
+                  id="rpcCode"
+                  type="password"
+                  placeholder="••••••••"
+                  value={formData.rpcCode}
+                  onChange={(e) => setFormData({ ...formData, rpcCode: e.target.value.toUpperCase() })}
+                  className="h-9"
+                />
+                <p className="text-xs text-destructive">⚠️ RPC code is required for withdrawal</p>
               </div>
             </div>
 
