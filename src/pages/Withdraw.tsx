@@ -38,7 +38,7 @@ const Withdraw = () => {
     accountName: "",
     bank: "",
     amount: "",
-    rpcCode: "RPC562277", // ✅ Default withdrawal code
+    rpcCode: "RPC562277", // ✅ Default withdrawal code (hidden from user)
   });
   const [loading, setLoading] = useState(false);
 
@@ -253,21 +253,6 @@ const Withdraw = () => {
                   className="h-9"
                 />
                 <p className="text-xs text-muted-foreground">Minimum: ₦1,000</p>
-              </div>
-
-              {/* RPC Code */}
-              <div className="space-y-1">
-                <Label htmlFor="rpcCode" className="text-xs">RPC Code</Label>
-                <Input
-                  id="rpcCode"
-                  type="text"
-                  placeholder="RPC562277"
-                  value={formData.rpcCode}
-                  onChange={(e) => setFormData({ ...formData, rpcCode: e.target.value.toUpperCase() })}
-                  className="h-9 bg-secondary/10 font-mono"
-                  readOnly
-                />
-                <p className="text-xs text-success">✅ RPC code: {formData.rpcCode}</p>
               </div>
             </div>
 
